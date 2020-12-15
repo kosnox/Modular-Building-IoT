@@ -46,11 +46,11 @@ const char* ssid = "WiFiName";  // Enter SSID here
 const char* password = "123456789";  //Enter Password here
 
 //server interactions links - change your server address here
-const char* serverGetConnfigAddress = "https://esp32-terrarium-control.your.page/getConfig";
+const char* serverGetConnfigAddress = "http://phpsandbox.cba.pl/api/iot/save.php?floor=5&dev=tempN&dev2=wilgN";
 const char* serverSendConfigAddress = "https://esp32-terrarium-control.your.page/config?";
-const char* serverSendStateAddress = "https://esp32-terrarium-control.your.page/stateChange?";
-const char* serverSendReadingsgAddress = "https://esp32-terrarium-control.your.page/reading?";
-const char* serverGetControlModeAddress = "https://esp32-terrarium-control.your.page/getMode";
+const char* serverSendStateAddress = "http://phpsandbox.cba.pl/api/iot/save.php?floor=5&";
+const char* serverSendReadingsgAddress = "http://phpsandbox.cba.pl/api/iot/save.php?floor=5&";
+const char* serverGetControlModeAddress = "http://phpsandbox.cba.pl/api/iot/settings.php?floor=5&dev=PID_vs_On-OFF_mode";
 const char* serverSendControlModeAddress = "https://esp32-terrarium-control.your.page/mode?";
 const char* heaterLink = "grzalka=";
 const char* humidifierLink = "pompka=";
