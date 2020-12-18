@@ -47,15 +47,18 @@ const char* password = "123456789";  //Enter Password here
 
 //server interactions links - change your server address here
 const char* serverGetConnfigAddress = "http://phpsandbox.cba.pl/api/iot/save.php?floor=5&dev=tempN&dev2=wilgN";
-const char* serverSendConfigAddress = "https://esp32-terrarium-control.your.page/config?";
+const char* serverSendConfigAddress = "http://phpsandbox.cba.pl/api/iot/settings_save.php?floor=5&";
 const char* serverSendStateAddress = "http://phpsandbox.cba.pl/api/iot/save.php?floor=5&";
 const char* serverSendReadingsgAddress = "http://phpsandbox.cba.pl/api/iot/save.php?floor=5&";
 const char* serverGetControlModeAddress = "http://phpsandbox.cba.pl/api/iot/settings.php?floor=5&dev=PID_vs_On-OFF_mode";
-const char* serverSendControlModeAddress = "https://esp32-terrarium-control.your.page/mode?";
+const char* serverSendControlModeAddress = "http://phpsandbox.cba.pl/api/iot/settings_save.php?floor=5&";
 const char* heaterLink = "grzalka=";
 const char* humidifierLink = "pompka=";
 const char* temperatureLink = "temp=";
 const char* humidityLink = "wilg=";
+const char* setTemperatureLink = "tempN=";
+const char* setHumidityLink = "wilgN=";
+const char* setModeLink = "PID_vs_On-OFF_mode=";
 
 // Initialize DHT sensor.
 DHT dht(dhtPin, DHTTYPE);
@@ -347,11 +350,11 @@ void loop() {
   if (isNewSettingToSend && !isInEditMode) {
     isNewSettingToSend = false;
     HTTPClient http;
-    http.begin(String(serverSendConfigAddress) + String(temperatureLink) + String(setTemperature, 2) + "&" + String(humidityLink) + String(setHumidity, 2));
-    Serial.println(String(serverSendConfigAddress) + String(temperatureLink) + String(setTemperature, 2) + "&" + String(humidityLink) + String(setHumidity, 2));
+    http.begin(String(serverSendConfigAddress) + String(setTemperatureLink) + String(setTemperature, 2) + "&" + String(setHumidityLink) + String(setHumidity, 2));
+    Serial.println(String(serverSendConfigAddress) + String(setTemperatureLink) + String(setTemperature, 2) + "&" + String(setHumidityLink) + String(setHumidity, 2));
     Serial.println("Sending to server temperature set to: " + String(setTemperature, 2) + "and humidity set to: " + String(setHumidity, 2));
-    http.begin(String(serverSendControlModeAddress) + String(controlMode, 0));
-    Serial.println(String(serverSendControlModeAddress) + String(controlMode, 0));
+    http.begin(String(serverSendControlModeAddress) + String(setModeLink) + String(controlMode, 0));
+    Serial.println(String(serverSendControlModeAddress) + String(setModeLink) + String(controlMode, 0));
     Serial.println("Sending to server control Mode set to: " + String(controlMode, 0));
     http.GET();
     http.end();
