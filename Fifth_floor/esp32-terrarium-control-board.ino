@@ -44,8 +44,8 @@ LiquidCrystal_I2C lcd(0x3F, lcdColumns, lcdRows);
 //#define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
 
 //WiFi connection
-const char* ssid = "Domek";  // Enter SSID here
-const char* password = "kosnole69";  //Enter Password here
+const char* ssid = "WiFi";  // Enter SSID here
+const char* password = "123456789";  //Enter Password here
 
 //server interactions links - change your server address here
 const char* serverGetConnfigAddress = "http://phpsandbox.cba.pl/api/iot/settings.php?floor=5&dev=tempN&dev2=wilgN";
@@ -370,7 +370,8 @@ void loop() {
     previousServerTime = currentTimeOnCore1;
     //  Chcecking connection with WiFi
     if (WiFi.status() == WL_CONNECTED && isInEditMode == false) {
-      controlMode = static_cast<int>(getIntX(httpGETDATA(serverGetControlModeAddress), 3));
+      Serial.println(static_cast<int>(getIntX(String(httpGETDATA(serverGetControlModeAddress)), 3)));
+      controlMode = static_cast<int>(getIntX(String(httpGETDATA(serverGetControlModeAddress)), 3));
       //Serial.println((int)(getIntX(httpGETDATA(serverGetControlModeAddress), 3)));
       String serverReply = httpGETDATA(serverGetConnfigAddress);
       noInterrupts();
