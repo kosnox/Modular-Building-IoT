@@ -1,3 +1,5 @@
+#include <ArduinoJson.h>
+
 #include <LiquidCrystal_I2C.h>
 #include <WiFi.h>
 #include "DHT.h"
@@ -15,7 +17,7 @@
 uint8_t dhtPin = 4;
 
 // Controller mode
-int controlMode = 1; //1 = PID, 2 = on-off
+volatile int controlMode = 1; //1 = PID, 2 = on-off
 
 // on-off controller settings
 float heaterHysteresis = 1;
@@ -32,9 +34,9 @@ float KiHumidity = 1.5;
 float KdHumidity = 1;
 
 //LCD screen preset
-int lcdColumns = 16;
-int lcdRows = 2;
-LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
+int lcdColumns = 20;
+int lcdRows = 4;
+LiquidCrystal_I2C lcd(0x3F, lcdColumns, lcdRows);
 
 // Uncomment one of the lines below for whatever DHT sensor type you're using!
 #define DHTTYPE DHT11   // DHT 11
@@ -42,20 +44,23 @@ LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
 //#define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
 
 //WiFi connection
-const char* ssid = "WiFiName";  // Enter SSID here
-const char* password = "123456789";  //Enter Password here
+const char* ssid = "Domek";  // Enter SSID here
+const char* password = "kosnole69";  //Enter Password here
 
 //server interactions links - change your server address here
-const char* serverGetConnfigAddress = "http://phpsandbox.cba.pl/api/iot/save.php?floor=5&dev=tempN&dev2=wilgN";
-const char* serverSendConfigAddress = "https://esp32-terrarium-control.your.page/config?";
+const char* serverGetConnfigAddress = "http://phpsandbox.cba.pl/api/iot/settings.php?floor=5&dev=tempN&dev2=wilgN";
+const char* serverSendConfigAddress = "http://phpsandbox.cba.pl/api/iot/settings_save.php?floor=5&";
 const char* serverSendStateAddress = "http://phpsandbox.cba.pl/api/iot/save.php?floor=5&";
 const char* serverSendReadingsgAddress = "http://phpsandbox.cba.pl/api/iot/save.php?floor=5&";
 const char* serverGetControlModeAddress = "http://phpsandbox.cba.pl/api/iot/settings.php?floor=5&dev=PID_vs_On-OFF_mode";
-const char* serverSendControlModeAddress = "https://esp32-terrarium-control.your.page/mode?";
+const char* serverSendControlModeAddress = "http://phpsandbox.cba.pl/api/iot/settings_save.php?floor=5&";
 const char* heaterLink = "grzalka=";
 const char* humidifierLink = "pompka=";
 const char* temperatureLink = "temp=";
 const char* humidityLink = "wilg=";
+const char* setTemperatureLink = "tempN=";
+const char* setHumidityLink = "wilgN=";
+const char* setModeLink = "PID_vs_On-OFF_mode=";
 
 // Initialize DHT sensor.
 DHT dht(dhtPin, DHTTYPE);
@@ -340,6 +345,10 @@ void setup() {
 
 //Program for core 1
 void loop() {
+//  Serial.println("***************************************************************");
+//  Serial.println(controlMode);
+//  Serial.println(String(controlMode, 1));
+//  Serial.println("***************************************************************");
 
   unsigned long currentTimeOnCore1 = millis();
 
@@ -347,12 +356,13 @@ void loop() {
   if (isNewSettingToSend && !isInEditMode) {
     isNewSettingToSend = false;
     HTTPClient http;
-    http.begin(String(serverSendConfigAddress) + String(temperatureLink) + String(setTemperature, 2) + "&" + String(humidityLink) + String(setHumidity, 2));
-    Serial.println(String(serverSendConfigAddress) + String(temperatureLink) + String(setTemperature, 2) + "&" + String(humidityLink) + String(setHumidity, 2));
+    http.begin(String(serverSendConfigAddress) + String(setTemperatureLink) + String(setTemperature, 2) + "&" + String(setHumidityLink) + String(setHumidity, 2));
+    Serial.println(String(serverSendConfigAddress) + String(setTemperatureLink) + String(setTemperature, 2) + "&" + String(setHumidityLink) + String(setHumidity, 2));
     Serial.println("Sending to server temperature set to: " + String(setTemperature, 2) + "and humidity set to: " + String(setHumidity, 2));
-    http.begin(String(serverSendControlModeAddress) + String(controlMode, 0));
-    Serial.println(String(serverSendControlModeAddress) + String(controlMode, 0));
-    Serial.println("Sending to server control Mode set to: " + String(controlMode, 0));
+    http.GET();
+    http.begin(String(serverSendControlModeAddress) + String(setModeLink) + String(controlMode));
+    Serial.println(String(serverSendControlModeAddress) + String(setModeLink) + String(controlMode));
+    Serial.println("Sending to server control Mode set to: " + String(controlMode));
     http.GET();
     http.end();
   }
@@ -360,13 +370,18 @@ void loop() {
     previousServerTime = currentTimeOnCore1;
     //  Chcecking connection with WiFi
     if (WiFi.status() == WL_CONNECTED && isInEditMode == false) {
-      //controlMode = (httpGETDATA(serverGetControlModeAddress)).toInt();
+      
+      //Serial.println((int)(getIntX(httpGETDATA(serverGetControlModeAddress), 3)));
       String serverReply = httpGETDATA(serverGetConnfigAddress);
       noInterrupts();
+      
       oldSetTemperature = setTemperature;
       oldSetHumidity = setHumidity;
       setTemperature = getIntX(serverReply, 1);
       setHumidity = getIntX(serverReply, 2);
+      controlMode = static_cast<int>(getIntX(String(httpGETDATA(serverGetControlModeAddress)), 3));
+      if(controlMode == 0 ){controlMode=1;}
+      else if(controlMode == 1 ){controlMode=2;}
       interrupts();
       if (oldSetTemperature != setTemperature || oldSetHumidity != setHumidity) {
         simulateLCD();
@@ -431,6 +446,7 @@ String httpGETDATA(const char* serverLink) {
 
   String package = "--";
 
+
   if (httpReply > 0)  {
     Serial.print("Sir! The server says: ");
     package = http.getString();
@@ -448,17 +464,35 @@ String httpGETDATA(const char* serverLink) {
 /*
   gets the number x int from serverReply
 */
-float getIntX(String serverReply, int x) {
-  serverReply = serverReply.substring(3, serverReply.length()); //removes the first 3 characters from left
-  char message[serverReply.length()]; //converting to char
-  serverReply.toCharArray(message, serverReply.length());
-  char* wantedVariable = strtok(message, " :\{\"temp,"); //returns the first wanted variable
-  if (x == 1) {
-    return atof(wantedVariable);
+ 
+  StaticJsonBuffer<200> doc;
+  StaticJsonBuffer<200> doc1;
+  StaticJsonBuffer<200> doc2;
+float getIntX(String serverReply, int x) { 
+  
+  float wantedVariable;
+  JsonArray& op = doc.parseArray(serverReply);
+  String word0 = op[0];
+  String word1 = op[1];
+  JsonObject& obj1 = doc1.parseObject(word0);
+  JsonObject& obj2 = doc2.parseObject(word1);
+  doc.clear();
+  doc1.clear();
+  doc2.clear();
+  if (x == 1) 
+  {
+    wantedVariable = obj1["value"];
+    return wantedVariable;
   }
-  else {
-    wantedVariable = strtok(NULL, " :\{\"temp,wilg");
-    return atof(wantedVariable);
+  else if(x == 3)
+  {
+    wantedVariable = obj1["value"];
+    return wantedVariable;
+    }
+  else if(x == 2) 
+  {
+    wantedVariable = obj2["value"];
+    return wantedVariable;
   }
 }
 
