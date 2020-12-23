@@ -44,8 +44,8 @@ LiquidCrystal_I2C lcd(0x3F, lcdColumns, lcdRows);
 //#define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
 
 //WiFi connection
-const char* ssid = "WiFi";  // Enter SSID here
-const char* password = "123456789";  //Enter Password here
+const char* ssid = "Domek";  // Enter SSID here
+const char* password = "kosnole69";  //Enter Password here
 
 //server interactions links - change your server address here
 const char* serverGetConnfigAddress = "http://phpsandbox.cba.pl/api/iot/settings.php?floor=5&dev=tempN&dev2=wilgN";
@@ -360,8 +360,8 @@ void loop() {
     Serial.println(String(serverSendConfigAddress) + String(setTemperatureLink) + String(setTemperature, 2) + "&" + String(setHumidityLink) + String(setHumidity, 2));
     Serial.println("Sending to server temperature set to: " + String(setTemperature, 2) + "and humidity set to: " + String(setHumidity, 2));
     http.GET();
-    http.begin(String(serverSendControlModeAddress) + String(setModeLink) + controlMode);
-    Serial.println(String(serverSendControlModeAddress) + String(setModeLink) + controlMode);
+    http.begin(String(serverSendControlModeAddress) + String(setModeLink) + String(controlMode));
+    Serial.println(String(serverSendControlModeAddress) + String(setModeLink) + String(controlMode));
     Serial.println("Sending to server control Mode set to: " + String(controlMode));
     http.GET();
     http.end();
@@ -370,15 +370,18 @@ void loop() {
     previousServerTime = currentTimeOnCore1;
     //  Chcecking connection with WiFi
     if (WiFi.status() == WL_CONNECTED && isInEditMode == false) {
-      Serial.println(static_cast<int>(getIntX(String(httpGETDATA(serverGetControlModeAddress)), 3)));
-      controlMode = static_cast<int>(getIntX(String(httpGETDATA(serverGetControlModeAddress)), 3));
+      
       //Serial.println((int)(getIntX(httpGETDATA(serverGetControlModeAddress), 3)));
       String serverReply = httpGETDATA(serverGetConnfigAddress);
       noInterrupts();
+      
       oldSetTemperature = setTemperature;
       oldSetHumidity = setHumidity;
       setTemperature = getIntX(serverReply, 1);
       setHumidity = getIntX(serverReply, 2);
+      controlMode = static_cast<int>(getIntX(String(httpGETDATA(serverGetControlModeAddress)), 3));
+      if(controlMode == 0 ){controlMode=1;}
+      else if(controlMode == 1 ){controlMode=2;}
       interrupts();
       if (oldSetTemperature != setTemperature || oldSetHumidity != setHumidity) {
         simulateLCD();
@@ -461,20 +464,23 @@ String httpGETDATA(const char* serverLink) {
 /*
   gets the number x int from serverReply
 */
-
-float getIntX(String serverReply, int x) {
-
+ 
   StaticJsonBuffer<200> doc;
   StaticJsonBuffer<200> doc1;
   StaticJsonBuffer<200> doc2;
+float getIntX(String serverReply, int x) { 
+  
+  float wantedVariable;
   JsonArray& op = doc.parseArray(serverReply);
   String word0 = op[0];
   String word1 = op[1];
   JsonObject& obj1 = doc1.parseObject(word0);
   JsonObject& obj2 = doc2.parseObject(word1);
-  float wantedVariable;
-
-  if (x == 1) {
+  doc.clear();
+  doc1.clear();
+  doc2.clear();
+  if (x == 1) 
+  {
     wantedVariable = obj1["value"];
     return wantedVariable;
   }
@@ -483,7 +489,7 @@ float getIntX(String serverReply, int x) {
     wantedVariable = obj1["value"];
     return wantedVariable;
     }
-  else
+  else if(x == 2) 
   {
     wantedVariable = obj2["value"];
     return wantedVariable;
