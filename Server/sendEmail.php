@@ -26,9 +26,9 @@ $mail->SMTPSecure = 'tls'; // secure transfer enabled REQUIRED for Gmail
 $mail->Host = 'smtp.mailtrap.io';
 $mail->Port = 465; // or 587
 $mail->IsHTML(true);
-$mail->Username = "f4f19c96dae186";
-$mail->Password = "8db6c737d58038";
-$mail->SetFrom("IoThouse@gmail.com");
+$mail->Username = "";
+$mail->Password = "";
+$mail->SetFrom("");
 $mail->Subject = $subject;
 $mail->Body = $body;
 $mail->AddAddress($email);

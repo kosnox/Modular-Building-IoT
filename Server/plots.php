@@ -321,7 +321,7 @@ function getChart(interval){
 var floor = getDataFromUrl("floor");
 var name = getDataFromUrl("name");
 var agg = getDataFromUrl("agg");
-var url = "http://cargoalgps.cba.pl/api/iot/chartdata.php";
+var url = "http://phpsandbox.cba.pl/api/iot/chartdata.php";
 var arguments = "?floor=" + floor + "&name=" + name +"&agg=" + agg + "&interval=" + interval;
 var jqxhr = $.get( url + arguments, function() {
 })
@@ -365,7 +365,7 @@ function getInfo(interval){
 var floor = getDataFromUrl("floor");
 var name = getDataFromUrl("name");
 var interval = document.getElementById("interval").value;
-var url = "http://cargoalgps.cba.pl/api/iot/device_data.php";
+var url = "http://phpsandbox.cba.pl/api/iot/device_data.php";
 var arguments = "?floor=" + floor + "&name=" + name + "&interval=" + interval;
 var jqxhr = $.get( url + arguments, function() {
 })
