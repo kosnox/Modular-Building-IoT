@@ -44,8 +44,8 @@ LiquidCrystal_I2C lcd(0x3F, lcdColumns, lcdRows);
 //#define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
 
 //WiFi connection
-const char* ssid = "Domek";  // Enter SSID here
-const char* password = "kosnole69";  //Enter Password here
+const char* ssid = "SSID";  // Enter SSID here
+const char* password = "PASSWORD";  //Enter Password here
 
 //server interactions links - change your server address here
 const char* serverGetConnfigAddress = "http://phpsandbox.cba.pl/api/iot/settings.php?floor=5&dev=tempN&dev2=wilgN";
@@ -180,28 +180,25 @@ TaskHandle_t Task1;
 void codeForTask1( void * parameter )
 {
   for (;;) {
-
+    delay (3000);
+    //    Temperature and humidity reading
+    temperatureReading = getTemperatureFromSensor();
+    humidityReading = getHumidityFromSensor();
+    Serial.print("Sir! Reading: ");
+    Serial.print(temperatureReading);
+    Serial.print(" °C, ");
+    Serial.print(humidityReading);
+    Serial.print(" %. Difference: ");
+    Serial.print(error(setTemperature, temperatureReading));
+    Serial.print(" °C, ");
+    Serial.print(error(setHumidity, humidityReading));
+    Serial.print(" %");
+    Serial.print("This Task runs on Core: ");
+    Serial.println(xPortGetCoreID());
     switch (controlMode) {
       case 1:
         {
           unsigned long currentTimeOnCore0 = millis();
-
-          delay (3000);
-
-          //    Temperature and humidity reading
-          temperatureReading = getTemperatureFromSensor();
-          humidityReading = getHumidityFromSensor();
-          Serial.print("Sir! Reading: ");
-          Serial.print(temperatureReading);
-          Serial.print(" °C, ");
-          Serial.print(humidityReading);
-          Serial.print(" %. Difference: ");
-          Serial.print(error(setTemperature, temperatureReading));
-          Serial.print(" °C, ");
-          Serial.print(error(setHumidity, humidityReading));
-          Serial.print(" %");
-          Serial.print("This Task runs on Core: ");
-          Serial.println(xPortGetCoreID());
 
           //    PID for temperature
           currentTimeOnCore0 = millis();
@@ -259,8 +256,6 @@ void codeForTask1( void * parameter )
 
       case 2:
         {
-          delay(3000);
-
           // on - off heater
           if (isHeatingCurrentlyOn && error(setTemperature, temperatureReading) + heaterHysteresis < 0) {
             digitalWrite(heater, LOW);
@@ -345,10 +340,10 @@ void setup() {
 
 //Program for core 1
 void loop() {
-//  Serial.println("***************************************************************");
-//  Serial.println(controlMode);
-//  Serial.println(String(controlMode, 1));
-//  Serial.println("***************************************************************");
+  //  Serial.println("***************************************************************");
+  //  Serial.println(controlMode);
+  //  Serial.println(String(controlMode, 1));
+  //  Serial.println("***************************************************************");
 
   unsigned long currentTimeOnCore1 = millis();
 
@@ -360,9 +355,9 @@ void loop() {
     Serial.println(String(serverSendConfigAddress) + String(setTemperatureLink) + String(setTemperature, 2) + "&" + String(setHumidityLink) + String(setHumidity, 2));
     Serial.println("Sending to server temperature set to: " + String(setTemperature, 2) + "and humidity set to: " + String(setHumidity, 2));
     http.GET();
-    http.begin(String(serverSendControlModeAddress) + String(setModeLink) + String(controlMode));
-    Serial.println(String(serverSendControlModeAddress) + String(setModeLink) + String(controlMode));
-    Serial.println("Sending to server control Mode set to: " + String(controlMode));
+    http.begin(String(serverSendControlModeAddress) + String(setModeLink) + String(controlMode-1));
+    Serial.println(String(serverSendControlModeAddress) + String(setModeLink) + String(controlMode-1));
+    Serial.println("Sending to server control Mode set to: " + String(controlMode-1));
     http.GET();
     http.end();
   }
@@ -370,18 +365,22 @@ void loop() {
     previousServerTime = currentTimeOnCore1;
     //  Chcecking connection with WiFi
     if (WiFi.status() == WL_CONNECTED && isInEditMode == false) {
-      
-      //Serial.println((int)(getIntX(httpGETDATA(serverGetControlModeAddress), 3)));
+
       String serverReply = httpGETDATA(serverGetConnfigAddress);
       noInterrupts();
-      
+
       oldSetTemperature = setTemperature;
       oldSetHumidity = setHumidity;
       setTemperature = getIntX(serverReply, 1);
       setHumidity = getIntX(serverReply, 2);
       controlMode = static_cast<int>(getIntX(String(httpGETDATA(serverGetControlModeAddress)), 3));
-      if(controlMode == 0 ){controlMode=1;}
-      else if(controlMode == 1 ){controlMode=2;}
+      if (controlMode == 0 ) {
+        controlMode = 1;
+      }
+      else if (controlMode == 1 ) {
+        controlMode = 2;
+      }
+      //Serial.println(controlMode);
       interrupts();
       if (oldSetTemperature != setTemperature || oldSetHumidity != setHumidity) {
         simulateLCD();
@@ -403,7 +402,7 @@ void loop() {
       if (WiFi.status() == WL_CONNECTED) {
         Serial.println("sending heater and humidifier state to server");
         HTTPClient http;
-        http.begin(String(serverSendStateAddress) + String(heaterLink) + String(wasHeatingOnLastSent ? 1 : 0, 0) + "&" + String(humidifierLink) + String(wasHumidifierOnLastSent ? 1 : 0, 0));
+        http.begin(String(serverSendStateAddress) + String(heaterLink) + String(wasHeatingOnLastSent) + "&" + String(humidifierLink) + String(wasHumidifierOnLastSent));
         http.GET();
         http.end();
       }
@@ -464,12 +463,12 @@ String httpGETDATA(const char* serverLink) {
 /*
   gets the number x int from serverReply
 */
- 
-  StaticJsonBuffer<200> doc;
-  StaticJsonBuffer<200> doc1;
-  StaticJsonBuffer<200> doc2;
-float getIntX(String serverReply, int x) { 
-  
+
+StaticJsonBuffer<200> doc;
+StaticJsonBuffer<200> doc1;
+StaticJsonBuffer<200> doc2;
+float getIntX(String serverReply, int x) {
+
   float wantedVariable;
   JsonArray& op = doc.parseArray(serverReply);
   String word0 = op[0];
@@ -479,19 +478,27 @@ float getIntX(String serverReply, int x) {
   doc.clear();
   doc1.clear();
   doc2.clear();
-  if (x == 1) 
+  //Serial.println("*****************************");
+  //obj1.printTo(Serial);
+  //obj2.printTo(Serial);
+  //Serial.println("*****************************");
+
+  if (x == 1)
   {
     wantedVariable = obj1["value"];
+    //Serial.println(wantedVariable);
     return wantedVariable;
   }
-  else if(x == 3)
+  else if (x == 3)
   {
     wantedVariable = obj1["value"];
+    //Serial.println(wantedVariable);
     return wantedVariable;
-    }
-  else if(x == 2) 
+  }
+  else if (x == 2)
   {
     wantedVariable = obj2["value"];
+    //Serial.println(wantedVariable);
     return wantedVariable;
   }
 }
