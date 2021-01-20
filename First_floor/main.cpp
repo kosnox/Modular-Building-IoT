@@ -18,15 +18,19 @@ ESP01 esp(D14, D15, 9600);
 DigitalOut doors(D7);
 DigitalOut light(D2);
 PwmOut heater(D5);
+PwmOut fan(D3);
 
 // Sensors
 MFRC522 RfChip(SPI_MOSI, SPI_MISO, SPI_SCK, SPI_CS, D8);
 int hydrogenRaw, odorRaw, ammoniaRaw, methaneRaw, humidity;
 float temperature;
+int lastSentHumidity = 0;
+float lastSentTemperature = 0.0f;
 InterruptIn movement(D4);
 
 bool lightsOn = true;
 int heaterPercent = 0;
+int fanPercent = 0;
 
 
 void closeDoors()
@@ -57,7 +61,7 @@ void movementDetected()
 bool readAir(void)
 {
     string dataAir;
-    esp.connectClient("192.168.1.37", "80");
+    esp.connectClient("192.168.0.108", "80");
     esp.readToString(dataAir);
     printf("%s\r\n", dataAir.c_str());
 
@@ -110,9 +114,14 @@ void postTemperatureHumidity()
 {
     while(!readAir());
 
+    if (lastSentHumidity == humidity && lastSentTemperature == temperature)
+        return;
+
     string jakistam;
-    esp.sendGETRequest("/api/iot/save.php?floor=1&termometr=" + to_string(temperature) + "&wilgotność=" + to_string(humidity), "cargoalgps.cba.pl", jakistam);
+    esp.sendGETRequest("/api/iot/save.php?floor=1&termometr=" + to_string(temperature) + "&wilgotność=" + to_string(humidity), "phpsandbox.cba.pl", jakistam);
     printf("%s", jakistam.c_str());
+    lastSentHumidity = humidity;
+    lastSentTemperature = temperature;
 }
 
 void readCard()
@@ -136,7 +145,7 @@ void readCard()
     }
     
     string jakistam;
-    esp.sendGETRequest("/api/iot/save.php?floor=1&logs=" + cardNr, "cargoalgps.cba.pl", jakistam);
+    esp.sendGETRequest("/api/iot/save.php?floor=1&logs=" + cardNr, "phpsandbox.cba.pl", jakistam);
 
     for (uint8_t i = 0; i < RfChip.uid.size; i++) {
         if (RfChip.uid.uidByte[i] != card[i]) {
@@ -150,10 +159,10 @@ void readCard()
 bool checkServer()
 {
     string serverData;
-    esp.sendGETRequest("/api/iot/settings.php?floor=1&dev=grzejnik&dev2=światła", "cargoalgps.cba.pl", serverData);
+    esp.sendGETRequest("/api/iot/settings.php?floor=1&dev=grzejnik&dev2=światła&dev3=wentylator", "phpsandbox.cba.pl", serverData);
     printf("%s", serverData.c_str());
 
-    size_t positionStart = serverData.find("grzejnik");
+    size_t positionStart = serverData.find("grzejnik");//8
     if (positionStart == string::npos) return false;
     size_t positionEnd = serverData.find("}", positionStart);
     if (positionEnd == string::npos) return false;
@@ -169,7 +178,17 @@ bool checkServer()
     lightsOn = stoi(serverData.substr(positionStart + 28 , positionEnd - positionStart - 29));
     printf("%d\r\n", lightsOn);
 
+    positionStart = serverData.find("wentylator");//10
+    if (positionStart == string::npos) return false;
+    positionEnd = serverData.find("}", positionStart);
+    if (positionEnd == string::npos) return false;
+    fanPercent = stoi(serverData.substr(positionStart + 21 , positionEnd - positionStart - 22));
+    printf("%d\r\n", fanPercent);
+    if(fanPercent > 100) fanPercent = 100;
+    if(fanPercent < 0) fanPercent = 0;
+
     heater.pulsewidth(0.001f + 0.00001f*heaterPercent);
+    fan.write((100-fanPercent)/100.0f);
 
     return true;
 }
@@ -199,6 +218,8 @@ int main()
     movement.rise(&movementDetected);
     movement.fall(&movementDetected);
     heater.period_ms(20);
+    fan.period_ms(20);
+    fan.write(1);
 
     checkServer();
     postTemperatureHumidity();
