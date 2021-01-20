@@ -100,7 +100,7 @@ if (!empty($_GET["name"])) {
       }else{
         $setting->value = $_GET["value"];
       }
-
+      $device->_auto = $_GET["auto"] == "on" ? 1 : 0;
       //przypisz dane do urzadzenia
       $device->ownDevicesettingsList[] = $setting;
 
@@ -122,6 +122,7 @@ $dev = R::getAll(
   'SELECT * FROM device INNER JOIN devicesettings ON device.id = device_id WHERE _floor = :floor',
   [':floor' => $_GET['floor']]
 );
+
 ?>
 
 <body>
@@ -143,12 +144,25 @@ $dev = R::getAll(
         </div>
       <?php else : ?>
         <div id="number">
-          <input type="number" class="form-control" style="width:150px" name="value" value="<?= $d["value"] ?>"></br>
+          <input type="number" class="form-control" <?php echo "id='" . $d["_name"] . "'"?> style="width:150px" name="value" value="<?= $d["value"] ?>" <?php if ($d["_auto"] == 1) echo "disabled" ?>></br>
         </div>
       <?php endif; ?>
+      <input type="checkbox" name="auto" class="default" <?php echo "onclick=\"checkboxDisable('" . $d["_name"] . "')\" " ?>  <?php if ($d["_auto"] == 1) echo "checked" ?>> Ustawiaj automatycznie </br></br>
       <input type="submit" name="formsubmit" class="btn btn-secondary btn-sm" value="Zapisz">
     </form>
     <hr />
   <?php endforeach; ?>
       </div>
 </body>
+
+<script>
+function checkboxDisable(name){
+  var el = document.getElementById(name);
+  if(el.disabled){
+    el.disabled = false;
+  }else{
+    el.disabled = true;
+  }
+
+}
+</script>

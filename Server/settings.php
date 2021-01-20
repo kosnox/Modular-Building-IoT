@@ -35,6 +35,7 @@ R::setup(dbCredentials());
   else
       http_response_code(400); //bad request
 }
-
+else
+      http_response_code(400); //bad request
 
 ?>

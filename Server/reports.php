@@ -27,15 +27,23 @@ if (!empty($_GET["floor"])) {
     <th scope="col">Ostatnia modyfikacja</th>
     <th width="100px" scope="col">Dane</th>
     <th width="100px" scope="col">Podsumowanie</th>
+    <th width="100px" scope="col">Porównaj</th>
     </tr>
     <?php foreach ($device as $d) : ?>
       <tr>
       <th scope="row"><?= $d['id'] ?></th>
         <td><?= $d['_name'] ?></td>
         <td><?= $d['lastDate'] ?></td>
+        <?php if(strlen($d['lastDate'])>0) : ?>
         <td><a href="device_data_table.php?floor=<?=$d['_floor']?>&name=<?= $d['_name'] ?>">Dane</a></td>
         <td><a href="plots.php?floor=<?=$d['_floor']?>&name=<?= $d['_name'] ?>&agg=<?= $d['agg_fun'] ?>&exclude=<?= $d['exclude'] ?>">Podsumowanie</a></td>
-      </tr>
+        <td><a href="plot_compare.php?floor=<?=$d['_floor']?>&name=<?= $d['_name'] ?>&agg=<?= $d['agg_fun'] ?>&exclude=<?= $d['exclude'] ?>">Porównaj</a></td>
+        <?php else : ?>
+          <td></td>
+          <td></td>
+          <td></td>
+        <?php endif; ?>
+        </tr>
     <?php endforeach; ?>
   </table>
   </br>

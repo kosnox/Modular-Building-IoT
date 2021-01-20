@@ -72,6 +72,14 @@
   </div>
 </div>
 </br>
+<?php if($_GET["agg"] == "count01"): ?>
+<div class="row text-center">
+<div class="col-sm">
+<input type="checkbox" id="count01" onclick="changeInterval()" checked /> Pokaż tylko włączenia
+</div>
+</div>
+</br>
+<?php endif; ?>
 <div class="Container">
   <div class="row text-center">
     <?php if (strpos($_GET["exclude"], 'count') === false): ?>
@@ -323,6 +331,10 @@ var name = getDataFromUrl("name");
 var agg = getDataFromUrl("agg");
 var url = "http://phpsandbox.cba.pl/api/iot/chartdata.php";
 var arguments = "?floor=" + floor + "&name=" + name +"&agg=" + agg + "&interval=" + interval;
+if(agg == "count01"){
+  var checked = document.getElementById("count01").checked ? 1 : 0;
+  arguments += "&where=" + checked;
+}
 var jqxhr = $.get( url + arguments, function() {
 })
   .done(function(response) {

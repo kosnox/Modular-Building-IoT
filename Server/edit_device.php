@@ -272,6 +272,7 @@ if(isset($_GET['id'])){
         <option value="avg" <?php if ($fields->agg_fun == "avg") echo("selected");?>>Średnia</option>
         <option value="sum" <?php if ($fields->agg_fun == "sum") echo("selected");?>>Suma</option>
         <option value="count" <?php if ($fields->agg_fun == "count") echo("selected");?>>Zliczanie</option>
+        <option value="count01" <?php if ($fields->agg_fun == "count01") echo("selected");?>>Zliczanie on/off</option>
       </select>
   </div>
 </br>
