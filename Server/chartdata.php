@@ -21,6 +21,7 @@ if (isset($_GET["floor"])) {
                     $agg = "SUM";
                     break;
                     case "count":
+                    case "count01":
                       $agg = "COUNT";
                       break;
                 default:
@@ -29,27 +30,29 @@ if (isset($_GET["floor"])) {
                     break;
             }
 
+            $where = isset($_GET["where"]) ? " AND _data = " . $_GET["where"] : ""; 
+
             switch ($_GET["interval"]) {
               case "hournow":
-                  $sql = "SELECT IF(MINUTE(_date) > 10, MINUTE(_DATE) DIV 10 * 10,0) AS minute, $agg(_data) AS data FROM devicedata WHERE device_id = :device_id AND date(now()) = date(_date) AND hour(now()) = hour(_date) GROUP BY minute ORDER BY minute";
+                  $sql = "SELECT IF(MINUTE(_date) > 10, MINUTE(_DATE) DIV 10 * 10,0) AS minute, $agg(_data) AS data FROM devicedata WHERE device_id = :device_id AND date(now()) = date(_date) AND hour(now()) = hour(_date) $where GROUP BY minute ORDER BY minute";
                 break;
               case "hourbefore":
-                  $sql = "SELECT IF(MINUTE(_date) > 10, MINUTE(_DATE) DIV 10 * 10,0) AS minute, $agg(_data) AS data FROM devicedata WHERE device_id = :device_id AND IF(hour(now()) = 0,date(now() - INTERVAL 1 DAY),date(now())) = date(_date) AND hour(now() - INTERVAL 1 HOUR)  = hour(_date) GROUP BY minute ORDER BY minute";
+                  $sql = "SELECT IF(MINUTE(_date) > 10, MINUTE(_DATE) DIV 10 * 10,0) AS minute, $agg(_data) AS data FROM devicedata WHERE device_id = :device_id AND IF(hour(now()) = 0,date(now() - INTERVAL 1 DAY),date(now())) = date(_date) AND hour(now() - INTERVAL 1 HOUR)  = hour(_date) $where GROUP BY minute ORDER BY minute";
                 break;
                 case "today":
-                  $sql = "SELECT HOUR(_date) AS hour, $agg(_data) AS data FROM devicedata WHERE device_id = :device_id AND _date > NOW() - INTERVAL 1 DAY GROUP BY hour ORDER BY hour";
+                  $sql = "SELECT HOUR(_date) AS hour, $agg(_data) AS data FROM devicedata WHERE device_id = :device_id AND _date > NOW() - INTERVAL 1 DAY $where GROUP BY hour ORDER BY hour";
                 break;
                 case "yesterday":
-                  $sql = "SELECT HOUR(_date) AS hour, $agg(_data) AS data FROM devicedata WHERE device_id = :device_id AND _date > NOW() - INTERVAL 2 DAY AND _date < NOW() - INTERVAL 1 DAY GROUP BY hour ORDER BY hour";
+                  $sql = "SELECT HOUR(_date) AS hour, $agg(_data) AS data FROM devicedata WHERE device_id = :device_id AND _date > NOW() - INTERVAL 2 DAY AND _date < NOW() - INTERVAL 1 DAY $where GROUP BY hour ORDER BY hour";
                 break;
                 case "7days":
-                  $sql = "SELECT DATE(_date) AS date, $agg(_data) AS data FROM devicedata WHERE device_id = :device_id AND _date > NOW() - INTERVAL 6 DAY GROUP BY date ORDER BY date";
+                  $sql = "SELECT DATE(_date) AS date, $agg(_data) AS data FROM devicedata WHERE device_id = :device_id AND _date > NOW() - INTERVAL 6 DAY $where GROUP BY date ORDER BY date";
                 break;
                 case "30days":
-                  $sql = "SELECT DATE(_date) AS date, $agg(_data) AS data FROM devicedata WHERE device_id = :device_id AND _date > NOW() - INTERVAL 29 DAY GROUP BY date ORDER BY date";
+                  $sql = "SELECT DATE(_date) AS date, $agg(_data) AS data FROM devicedata WHERE device_id = :device_id AND _date > NOW() - INTERVAL 29 DAY $where GROUP BY date ORDER BY date";
                 break;
                 case "year":
-                  $sql = "SELECT MONTH(_date) AS month, $agg(_data) AS data FROM devicedata WHERE device_id = :device_id AND _date > NOW() - INTERVAL 1 YEAR GROUP BY month ORDER BY month";
+                  $sql = "SELECT MONTH(_date) AS month, $agg(_data) AS data FROM devicedata WHERE device_id = :device_id AND _date > NOW() - INTERVAL 1 YEAR $where GROUP BY month ORDER BY month";
                 break;
               default:
                 echo json_encode(["error" => "Nie podano interval"]);
@@ -62,11 +65,12 @@ if (isset($_GET["floor"])) {
 
       $chartInfo = R::getRow( "SELECT * FROM devicereport WHERE device_id = :device_id",
       [ ':device_id' => $device->id ] );
-  
+      R::close();
         echo json_encode(Array("info" => $chartInfo,"data" => $value));
         http_response_code(200);
     }
     else{
+      R::close();
       echo json_encode(["error" => "Złe urządzenie"]);
       http_response_code(400); //bad request
     }

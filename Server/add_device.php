@@ -232,6 +232,7 @@ if(isset($_GET['name'])){
         <option value="avg">Średnia</option>
         <option value="sum">Suma</option>
         <option value="count">Zliczanie</option>
+        <option value="count01">Zliczanie on/off</option>
       </select>
   </div></br>
   <!-- email -->
